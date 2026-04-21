@@ -4,21 +4,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A single POSIX sh script (`syswatch.sh`) that prints a three-line system status snapshot: host/uptime, CPU+memory, and disk usage — color-coded by configurable thresholds.
+A C program (`syswatch.c`) that prints a three-line system status snapshot: host/uptime, CPU+memory, and disk usage — color-coded by configurable thresholds.
 
-## Running
+## Building
 
 ```sh
-sh syswatch.sh
+make
 ```
 
-No build step. Dependencies: `vmstat`, `ps`, `free`, `df` (standard Linux utilities).
+The Makefile always links statically (`-static`). It prefers `musl-gcc` if found, otherwise falls back to `gcc` (which will emit a harmless linker warning about `getpwuid` with glibc). Run the result with:
+
+```sh
+./syswatch
+```
+
+No runtime dependencies beyond libc. All data read directly from `/proc` and `/sys`.
 
 ## Thresholds
 
-Configured as variables at the top of `syswatch.sh`:
+Configured as `#define` constants at the top of `syswatch.c`:
 
-| Variable    | Default |
+| Constant    | Default |
 |-------------|---------|
 | `CPU_WARN`  | 70%     |
 | `MEM_WARN`  | 80%     |
@@ -28,9 +34,8 @@ Yellow is triggered at 85% of the warn threshold; red at or above it.
 
 ## Style constraints
 
-- POSIX sh only (`#!/bin/sh`, `set -eu`) — no bashisms
-- All logic stays inlined in `syswatch.sh`; no helper scripts or config files
-- Color codes via `printf '%b\n'`, not `echo -e`
+- No third-party libraries; all system data read from `/proc` or via `statvfs()`; CPU sampled over a 200ms window with all other reads overlapped inside it
+- All logic stays inlined in `syswatch.c`; no helper scripts or config files
 
 ## Git commits
 

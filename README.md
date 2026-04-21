@@ -1,11 +1,11 @@
 # syswatch
 
-A minimal POSIX shell system status snapshot. Prints a single line each for host info, CPU/memory, and disk usage — color-coded by threshold.
+A minimal system status snapshot. Prints a single line each for host info, CPU/memory, and disk usage — color-coded by threshold.
 
 ```
-Latitude 7390 odd@imadeitportable 2026-04-20 20:25:24 up 3:00
-CPU 23% [baloo_file_extr 32%] MEM 23%
-DISK / 67% /home 34% /var 74% /efi 9% /home/odd/src 1%
+System Product Name odd@imadeit 2026-04-21 17:51:06 up 1:37
+CPU 4% [baloo_file_extr 60%] MEM 11%
+DISK / 47% /var 40% /efi 9% /home 36% /home/odd/src 6%
 ```
 
 Colors go green → yellow → red as usage approaches and exceeds the warn threshold.
@@ -13,14 +13,17 @@ Colors go green → yellow → red as usage approaches and exceeds the warn thre
 ## Usage
 
 ```sh
-sh syswatch.sh
+make
+./syswatch
 ```
+
+Always links statically. Uses `musl-gcc` if available, otherwise `gcc` (glibc will emit a harmless linker warning about `getpwuid`).
 
 ## Thresholds
 
-Edit the top of `syswatch.sh`:
+Edit the `#define` constants at the top of `syswatch.c`:
 
-| Variable    | Default |
+| Constant    | Default |
 |-------------|---------|
 | `CPU_WARN`  | 70%     |
 | `MEM_WARN`  | 80%     |
@@ -28,7 +31,7 @@ Edit the top of `syswatch.sh`:
 
 ## Dependencies
 
-`vmstat`, `ps`, `free`, `df`
+None. All data is read directly from `/proc` and `/sys`.
 
 ## License
 
