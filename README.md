@@ -3,9 +3,9 @@
 A minimal POSIX shell system status snapshot. Prints a single line each for host info, CPU/memory, and disk usage — color-coded by threshold.
 
 ```
-ThinkPad X1 Carbon odd@hostname 2026-04-20 20:16:34 up 3 days
-CPU 23% [firefox 4%] MEM 61%
-DISK / 48% /home 72%
+Latitude 7390 odd@imadeitportable 2026-04-20 20:25:24 up 3:00
+CPU 23% [baloo_file_extr 32%] MEM 23%
+DISK / 67% /home 34% /var 74% /efi 9% /home/odd/src 1%
 ```
 
 Colors go green → yellow → red as usage approaches and exceeds the warn threshold.
