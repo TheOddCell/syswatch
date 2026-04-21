@@ -28,7 +28,7 @@ Edit the top of `syswatch.sh`:
 
 ## Dependencies
 
-`vmstat`, `ps`, `free`, `df` — present on any standard Linux system.
+`vmstat`, `ps`, `free`, `df`
 
 ## License
 
