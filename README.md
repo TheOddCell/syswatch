@@ -3,8 +3,8 @@
 A minimal system status snapshot. Prints a single line each for host info, CPU/memory, and disk usage — color-coded by threshold.
 
 ```
-System Product Name odd@imadeit 2026-04-21 17:51:06 up 1:37
-CPU 4% [baloo_file_extr 60%] MEM 11%
+ObsidianOS odd@imadeit 2026-04-21 18:07:55 up 1:54
+CPU 5% [baloo_file_extr 88%] MEM 17%
 DISK / 47% /var 40% /efi 9% /home 36% /home/odd/src 6%
 ```
 
