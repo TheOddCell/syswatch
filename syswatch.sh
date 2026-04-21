@@ -1,7 +1,6 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
-# Thresholds (percent)
 CPU_WARN=70
 MEM_WARN=80
 DISK_WARN=85
@@ -9,75 +8,40 @@ DISK_WARN=85
 RED='\033[0;31m'
 YEL='\033[1;33m'
 GRN='\033[0;32m'
+BLU='\033[0;34m'
 BLD='\033[1m'
+DIM='\033[2m'
 RST='\033[0m'
 
-colorize() {
-    local val=$1 warn=$2
-    if   (( val >= warn ));       then echo -e "${RED}${val}%${RST}"
-    elif (( val >= warn * 85/100 )); then echo -e "${YEL}${val}%${RST}"
-    else echo -e "${GRN}${val}%${RST}"
+cpu=$(vmstat 1 2 | awk 'NR==4{print 100 - $15}')
+top_proc=$(ps -eo comm,%cpu --sort=-%cpu | awk 'NR==2{printf "%s %.0f%%", $1, $2}')
+mem_pct=$(free | awk '/^Mem:/{printf "%d", $3/$2*100}')
+set -- $(free -h | awk '/^Mem:/{print $2, $3, $7}')
+total=$1 used=$2
+
+cpu_threshold=$(( CPU_WARN * 85 / 100 ))
+if   [ "$cpu" -ge "$CPU_WARN" ];      then cpu_col="${RED}${cpu}%${RST}"
+elif [ "$cpu" -ge "$cpu_threshold" ]; then cpu_col="${YEL}${cpu}%${RST}"
+else                                       cpu_col="${GRN}${cpu}%${RST}"
+fi
+
+mem_threshold=$(( MEM_WARN * 85 / 100 ))
+if   [ "$mem_pct" -ge "$MEM_WARN" ];      then mem_col="${RED}${mem_pct}%${RST}"
+elif [ "$mem_pct" -ge "$mem_threshold" ]; then mem_col="${YEL}${mem_pct}%${RST}"
+else                                           mem_col="${GRN}${mem_pct}%${RST}"
+fi
+
+disk_threshold=$(( DISK_WARN * 85 / 100 ))
+disks=""
+while read -r pct mount; do
+    if   [ "$pct" -ge "$DISK_WARN" ];      then disks="${disks} ${mount} ${RED}${pct}%${RST}"
+    elif [ "$pct" -ge "$disk_threshold" ]; then disks="${disks} ${mount} ${YEL}${pct}%${RST}"
+    else                                        disks="${disks} ${mount} ${GRN}${pct}%${RST}"
     fi
-}
+done << EOF
+$(df -Ph | awk 'NR>1 && $1~/^\/dev/ && $6!~/^\/run/{sub(/%/,"",$5); print $5, $6}')
+EOF
 
-cpu_usage() {
-    # Average idle across all CPUs, then invert
-    local idle
-    idle=$(vmstat 1 2 | awk 'NR==4{print $15}')
-    echo $(( 100 - idle ))
-}
-
-mem_usage() {
-    free | awk '/^Mem:/{printf "%d", $3/$2*100}'
-}
-
-disk_usage() {
-    local path=${1:-/}
-    df -P "$path" | awk 'NR==2{sub(/%/,"",$5); print $5}'
-}
-
-section() {
-    echo -e "\n${BLD}==> $1${RST}"
-}
-
-show_cpu() {
-    section "CPU"
-    local pct; pct=$(cpu_usage)
-    echo -e "  Usage: $(colorize "$pct" "$CPU_WARN")"
-}
-
-show_mem() {
-    section "Memory"
-    local pct; pct=$(mem_usage)
-    local total used avail
-    read -r total used avail < <(free -h | awk '/^Mem:/{print $2, $3, $7}')
-    echo -e "  Usage: $(colorize "$pct" "$MEM_WARN")  (${used} / ${total}, ${avail} free)"
-}
-
-show_disk() {
-    section "Disk"
-    while IFS= read -r line; do
-        local pct mount
-        pct=$(echo "$line" | awk '{sub(/%/,"",$5); print $5}')
-        mount=$(echo "$line" | awk '{print $6}')
-        echo -e "  ${mount}: $(colorize "$pct" "$DISK_WARN")"
-    done < <(df -Ph | awk 'NR>1 && $1!~/tmpfs|devtmpfs|udev/')
-}
-
-show_top_procs() {
-    section "Top Processes (by CPU)"
-    ps -eo pid,comm,%cpu,%mem --sort=-%cpu | head -6 | \
-        awk 'NR==1{printf "  %-8s %-20s %6s %6s\n",$1,$2,$3,$4; next}
-             {printf "  %-8s %-20s %6s %6s\n",$1,$2,$3,$4}'
-}
-
-main() {
-    echo -e "${BLD}syswatch — $(hostname) — $(date '+%Y-%m-%d %H:%M:%S')${RST}"
-    show_cpu
-    show_mem
-    show_disk
-    show_top_procs
-    echo
-}
-
-main "$@"
+printf '%b\n' "${BLD}${BLU}$(cat /sys/class/dmi/id/product_name 2>/dev/null || hostname)${RST} ${BLD}${GRN}$(id -un)@$(hostname)${RST} ${DIM}$(date '+%Y-%m-%d %H:%M:%S') up $(uptime | awk -F'up |,' 'NR==1{gsub(/^ +| +$/,"",$2); print $2}')${RST}"
+printf '%b\n' "CPU ${cpu_col} ${DIM}[${top_proc}]${RST} MEM ${mem_col}"
+printf '%b\n' "DISK${disks}"
